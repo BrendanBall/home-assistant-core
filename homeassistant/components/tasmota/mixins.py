@@ -106,6 +106,20 @@ class TasmotaOnOffEntity(TasmotaEntity):
         """Return true if device is on."""
         return self._on_off_state
 
+class TasmotaWakeUpEntity(TasmotaEntity):
+    """Base class for Tasmota entities which can be woken up."""
+    def __init__(self, **kwds: Any) -> None:
+        """Initialize."""
+        super().__init__(**kwds)
+
+    async def async_wake_up(self, **kwargs: Any) -> None:
+        """Wake up the entity."""
+        brightness = kwargs.get("brightness", 100)
+        params = {
+            "dimmer": brightness
+        }
+        await self._tasmota_entity.wakeup(**params)
+
 
 class TasmotaAvailability(TasmotaEntity):
     """Mixin used for platforms that report availability."""

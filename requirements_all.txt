@@ -835,7 +835,8 @@ hass-nabucasa==0.56.0
 hass_splunk==0.1.1
 
 # homeassistant.components.tasmota
-hatasmota==0.6.1
+# hatasmota==0.6.1
+git+https://github.com/BrendanBall/hatasmota@8a5cb3892d24348ef476b7542228acbc8a3c0acc#egg=hatasmota
 
 # homeassistant.components.jewish_calendar
 hdate==0.10.4

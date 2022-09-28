@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+import voluptuous as vol
 
 from hatasmota import light as tasmota_light
 from hatasmota.entity import TasmotaEntity as HATasmotaEntity, TasmotaEntityConfig
@@ -14,6 +15,8 @@ from hatasmota.light import (
 )
 from hatasmota.models import DiscoveryHashType
 
+from homeassistant.core import ServiceCall, callback
+from homeassistant.helpers import config_validation as cv, entity_platform, service
 from homeassistant.components import light
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -34,7 +37,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DATA_REMOVE_DISCOVER_COMPONENT
 from .discovery import TASMOTA_DISCOVERY_ENTITY_NEW
-from .mixins import TasmotaAvailability, TasmotaDiscoveryUpdate, TasmotaOnOffEntity
+from .mixins import TasmotaAvailability, TasmotaDiscoveryUpdate, TasmotaOnOffEntity, TasmotaWakeUpEntity
 
 DEFAULT_BRIGHTNESS_MAX = 255
 TASMOTA_BRIGHTNESS_MAX = 100
@@ -64,6 +67,37 @@ async def async_setup_entry(
         async_discover,
     )
 
+    async def async_handle_wakeup_service(
+        entity: TasmotaWakeUpEntity, call: ServiceCall
+    ) -> None:
+        """Handle wakeup entity."""
+        params = dict(call.data["params"])
+
+        await entity.async_wake_up(**params)
+
+    WAKE_UP_SCHEMA = {
+        vol.Optional("brightness"): vol.All(vol.Coerce(int), vol.Clamp(min=0, max=100)),
+    }
+
+    def preprocess_data(data: dict[str, Any]) -> dict[str | vol.Optional, Any]:
+        """Preprocess the service data."""
+        base: dict[str | vol.Optional, Any] = {
+            entity_field: data.pop(entity_field)
+            for entity_field in cv.ENTITY_SERVICE_FIELDS
+            if entity_field in data
+        }
+
+        base["params"] = data
+        return base
+
+    platform = entity_platform.async_get_current_platform()
+
+    platform.async_register_entity_service(
+        "wake_up",
+        vol.All(cv.make_entity_service_schema(WAKE_UP_SCHEMA), preprocess_data),
+        async_handle_wakeup_service,
+    )
+
 
 def clamp(value: float) -> float:
     """Clamp value to the range 0..255."""
@@ -85,6 +119,7 @@ class TasmotaLight(
     TasmotaAvailability,
     TasmotaDiscoveryUpdate,
     TasmotaOnOffEntity,
+    TasmotaWakeUpEntity,
     LightEntity,
 ):
     """Representation of a Tasmota light."""

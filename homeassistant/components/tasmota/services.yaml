@@ -1,0 +1,14 @@
+wake_up:
+  name: Wake Up
+  description: Wakes up a light
+  target:
+    entity:
+      domain: tasmota
+  fields:
+    brightness:
+      name: Brightness
+      description: Brightness to wake up to
+      selector:
+        number:
+          min: 0
+          max: 100
